@@ -2,76 +2,55 @@ import os
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = False
 ROOT.gInterpreter.ProcessLine('#include "sndGeometryGetter.h"')
+ROOT.gInterpreter.ProcessLine('#include "sndTchainGetter.h"')
 ROOT.gInterpreter.ProcessLine('#include "sndSciFiTools.h"')
 from ROOT.snd import analysis_tools as ana
+
+snd_root_path = os.environ["SNDSW_ROOT"]
+run_paths = f"{snd_root_path}/analysis/tools/data_paths.csv"
+geo_paths = f"{snd_root_path}/analysis/tools/geo_paths.csv"
+
 import sys
-ROOT.argv = sys.argv[:]                # give ROOT its original list
+ROOT.argv = sys.argv[:] # give ROOT its original list
 # Now remove the flags that argparse shouldn't see.
 clean_argv = [a for a in sys.argv if a != '-b']
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument("--rmin", dest="run_min", default=4575, type=int)
-parser.add_argument("--rmax", dest="run_max", default=4575, type=int)
+parser.add_argument("--run" , dest="run"     , required=True , type=int)
+parser.add_argument("--mc"  , dest="isMC"    , default=False)
+parser.add_argument("--frac", dest="run_frac", default=1.0   , type=float)
 args = parser.parse_args(clean_argv[1:])
 
-if args.run_max < args.run_min:
-    args.run_max = args.run_min
+if args.run < 4575 or args.run > 4854:
+    print("Run does not match emulsions Run 1 period. Exiting.")
+    exit()
 
-# scifi
-geo_file = "/eos/experiment/sndlhc/convertedData/physics/2022/geofile_sndlhc_TI18_V4_2022.root"
-if args.run_min > 5412:
-    geo_file = "/eos/experiment/sndlhc/convertedData/physics/2023/geofile_sndlhc_TI18_V3_2023.root"
-SciFiDet, MuFilter = ROOT.snd.analysis_tools.GetGeometry(geo_file)
+# geometry and detectors
+geo_file = ana.GetGeoPath(geo_paths,args.run)
+SciFiDet, MuFilter = ana.GetGeometry(geo_file)
 
-# 4575 - 4854
-ch  = ROOT.TChain("rawConv")
-ch2 = ROOT.TChain("rawConv")
-
-#run_min = 4575
-#run_min = 4619
-#run_max = 4854
-#run_max = 4619
-nfiles = 100
-for r in range(args.run_min,args.run_max+1):
-    run_dir = f'/eos/experiment/sndlhc/convertedData/physics/2022/run_00{r}'
-    if args.run_min > 5412:
-        run_dir = f'/eos/experiment/sndlhc/convertedData/physics/2023/run_00{r}'
-    if args.run_min == args.run_max:
-        if not os.path.exists(run_dir):
-            print("No directory for run",r,"EXIT")
-            exit()
-    if not os.path.exists(run_dir):
-        continue
-    for f in os.listdir(run_dir):
-        current_file = run_dir+"/"+f
-        ch.Add(current_file)
-        ch2.Add(current_file)
-        print("added file:",current_file)
+# check our database for non-zero entries
+# if not MC, use TchainGetter to get data file
+if not args.isMC:
+    ch = ana.GetTChain(run_paths,args.run)
 chfile = ch.GetFile()
 
-# this "goes to the end (??) of ch2, so we wasted it
-# that's why we have ch and ch2
-run_nevts = ch2.GetEntries()
-if run_nevts == 0:
-    print("WARNING: No events in run selection")
-print("Added",run_nevts,"entries")
+import tools.run_database as rdb
+run_nevts = rdb.get_run_entries(args.run)
+print("run events",run_nevts)
 
-import cuts
 # event loop
 passing_events = 0
 seen_events = 0
-to_loop = run_nevts
 
 # output file
-
-if args.run_max > args.run_min:
-    out_filename = f"scifi_eventfilter/scifi_selection_R{args.run_min}-{args.run_max}_ev{to_loop}.root"
-elif args.run_max == args.run_min:
-    out_filename = f"scifi_eventfilter/scifi_selection_R{args.run_min}_ev{to_loop}.root"
+out_filename = f"scifi_eventfilter/scifi_selection_R{args.run}.root"
+if args.run_frac != 1.0:
+    out_filename = f"scifi_eventfilter/scifi_selection_R{args.run}_frac{args.run_frac}.root"
 out_file   = ROOT.TFile(out_filename,"recreate")
 # output tree of rawConv, our filtered events
-out_raw = ch.CloneTree(0)
+out_tree = ch.CloneTree(0)
 
 
 # copy other stuff from source file
@@ -84,10 +63,10 @@ tbl   .Write("TimeBasedBranchList", ROOT.TObject.kSingleKey)
 ffh   .Write("FileHeader")
 cbmout.Write("cbmout")
 
-
+import tools.cuts as cuts
 for ievent, event in enumerate(ch):# event is an entry in the chain
-    if ievent >= to_loop:
-        print("breaking to loop")
+    if ievent >= run_nevts*args.run_frac:
+        print("Breaking event loop. Above looping fraction.")
         break
 
     SciFiDet.InitEvent(event.EventHeader)
@@ -134,12 +113,12 @@ for ievent, event in enumerate(ch):# event is an entry in the chain
     pass_estimate = (float(passing_events)/seen_events)*run_nevts
     print(f"Last pass event: {ievent}/{run_nevts} ({100.*float(ievent)/run_nevts:.2f}% done). Pass so far: {passing_events}",
           end="\r")
-    out_raw.Fill()
+    out_tree.Fill()
 
-print("Writing rawConv")
+print("Writing tree")
 out_file.Write()
 out_file.Close()
     
 print("passing_events:",passing_events,"/",run_nevts)
+rdb.write_eventfilter(args.run,passing_events)
 print("all events looped through vs tchain events:",seen_events,run_nevts)
-

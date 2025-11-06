@@ -5,13 +5,21 @@ ROOT.PyConfig.IgnoreCommandLineOptions = False
 ROOT.gInterpreter.ProcessLine('#include "sndGeometryGetter.h"')
 from ROOT.snd import analysis_tools as ana
 
+#inp_filename = "scifi_tracking/scifi_tracks_R4619_ev18860895.root"
+inp_filename = "scifi_tracking/scifi_tracks_R6640_ev369364945.root"
+inp_filename_nodir = inp_filename.split("/")[-1]
+output_file_id = inp_filename_nodir.replace("scifi_tracks_","")
+output_file_id = output_file_id.replace(".root","")
+print("Output file tag:",output_file_id)
+runnumber = int(output_file_id.split("_")[0].replace("R",""))
+print("Run number parsed:",runnumber)
+
 geo_file = "/eos/experiment/sndlhc/convertedData/physics/2022/geofile_sndlhc_TI18_V4_2022.root"
+if runnumber > 5412:
+    geo_file = "/eos/experiment/sndlhc/convertedData/physics/2023/geofile_sndlhc_TI18_V3_2023.root"
 SciFiDet, MuFilter = ana.GetGeometry(geo_file)
 
-#f = ROOT.TFile("scifi_selection/scifi_selection_R4619-4619_NE-1.root")
-f = ROOT.TFile("scifi_tracking/scifi_tracks_R4619_ev18860895.root")
-#f = ROOT.TFile("scifi_eventfilter/scifi_selection_R4619_ev18860895_bigshowers.root")
-#tree = f.Get("rawConv")
+f = ROOT.TFile(inp_filename)
 
 # configurations for SND-plane analysis tools
 myopt = ROOT.snd.Configuration.Option.ti18_2022_2023
@@ -36,85 +44,83 @@ def extrapolation(pos,mom,z):
 
 
 # histograms
-
-
-h_sh_ini = ROOT.TH1F("h_sh_ini","Shower start;Station;n showers",6,-0.5,5.5)
-h_sh_end = ROOT.TH1F("h_sh_end","Shower end;Station;n showers",6,-0.5,5.5)
-h_sh_len = ROOT.TH1F("h_sh_len","Shower length;Station;n showers",6,-0.5,5.5)
+h_sh_ini = ROOT.TH1F("h_sh_ini",f"Run {runnumber}: Shower start;Station;n showers",6,-0.5,5.5)
+h_sh_end = ROOT.TH1F("h_sh_end",f"Run {runnumber}: Shower end;Station;n showers",6,-0.5,5.5)
+h_sh_len = ROOT.TH1F("h_sh_len",f"Run {runnumber}: Shower length;Station;n showers",6,-0.5,5.5)
 
 h_sh_pos = ROOT.TH2F("h_sh_pos",
-                  "Shower position in station 2;x (cm);y (cm)",
-                  100, -50,-5,
-                  100, 10, 55
-                  )
+                     f"Run {runnumber}: Shower position in station 2;x (cm);y (cm)",
+                     100, -50,-5,
+                     100, 10, 55
+                     )
 
 h_diff = ROOT.TH2F("h_diff",
-                   "(tr-sh) Position;x (cm);y (cm)",
+                   f"Run {runnumber}: (tr-sh) Position;x (cm);y (cm)",
                    100, -10,10,
                    100, -10,10
                    )
 h_diff_zoom = ROOT.TH2F("h_diff_zoom",
-                        "(tr-sh) Position (zoomed in);x (cm);y (cm)",
+                        f"Run {runnumber}: (tr-sh) Position (zoomed in);x (cm);y (cm)",
                         100, -1,1,
                         100, -1,1
                         )
 
 h_ang = ROOT.TH1F("h_ang",
-                  "Angle between track and shower;Angle (rad);track-shower pairs",
+                  f"Run {runnumber}: Angle between track and shower;Angle (rad);track-shower pairs",
                   158,-0.1,1.57)
 
 h_ang_1 = ROOT.TH1F("h_ang_1",
-                     "Angle between track and shower (single station);Angle (rad);track-shower pairs",
-                     158,-0.1,1.57)
+                    f"Run {runnumber}: Angle between track and shower (single station);Angle (rad);track-shower pairs",
+                    158,-0.1,1.57)
 
 h_ang_23 = ROOT.TH1F("h_ang_23",
-                     "Angle between track and shower (nstations >1);Angle (rad);track-shower pairs",
+                     f"Run {runnumber}: Angle between track and shower (nstations >1);Angle (rad);track-shower pairs",
                      158,-0.1,1.57)
 
 h_ang_for = ROOT.TH1F("h_ang_for",
-                      "Forward angle between track and shower;Angle (rad);track-shower pairs",
+                      f"Run {runnumber}: Forward angle between track and shower;Angle (rad);track-shower pairs",
                       210,-0.01,0.2)
                   
 h_off_ang_pos = ROOT.TH2F("h_off_ang_pos",
-                          ";Angle (rad);Pos. diff in quadrature",
+                          f"Run {runnumber}: ;Angle (rad);Pos. diff in quadrature",
                           100,-0.1,1.0,
                           100, 0.0,3.0
                           )
 
 h_sh_ang_xz_1 = ROOT.TH1F("h_sh_ang_xz_1",
-                        "SciFi showers (single station);Angle xz (rad);N showers",
-                        158,-1.57,1.57)
+                          f"Run {runnumber}: SciFi showers (single station);Angle xz (rad);N showers",
+                          158,-1.57,1.57)
 h_sh_ang_yz_1 = ROOT.TH1F("h_sh_ang_yz_1",
-                        "SciFi showers (single station);Angle yz (rad);N showers",
-                        158,-1.57,1.57)
+                          f"Run {runnumber}: SciFi showers (single station);Angle yz (rad);N showers",
+                          158,-1.57,1.57)
 h_sh_ang_xz_2 = ROOT.TH1F("h_sh_ang_xz_2",
-                        "SciFi showers (multiple stations);Angle xz (rad);N showers",
-                        158,-1.57,1.57)
+                          f"Run {runnumber}: SciFi showers (multiple stations);Angle xz (rad);N showers",
+                          158,-1.57,1.57)
 h_sh_ang_yz_2 = ROOT.TH1F("h_sh_ang_yz_2",
-                        "SciFi showers (multiple stations);Angle yz (rad);N showers",
-                        158,-1.57,1.57)
+                          f"Run {runnumber}: SciFi showers (multiple stations);Angle yz (rad);N showers",
+                          158,-1.57,1.57)
 
 h_centroid_1 = ROOT.TH2F("h_centroid_1",
-                         "Centroid of single-station showers (station 2);x (cm);y (cm)",
+                         f"Run {runnumber}: Centroid of single-station showers (station 2);x (cm);y (cm)",
                          100, -50,-5,
                          100, 10, 55)
 h_centroid_2 = ROOT.TH2F("h_centroid_2",
-                         "Centroid of multi-station showers (station 2);x (cm);y (cm)",
+                         f"Run {runnumber}: Centroid of multi-station showers (station 2);x (cm);y (cm)",
                          100, -50,-5,
                          100, 10, 55)
 h_centroid_3 = ROOT.TH2F("h_centroid_3",
-                         "Centroid of multi-station showers (station 3);x (cm);y (cm)",
+                         f"Run {runnumber}: Centroid of multi-station showers (station 3);x (cm);y (cm)",
                          100, -50,-5,
                          100, 10, 55)
 
 h_centroid_x = ROOT.TH1F("h_centroid_x",
-                         "Centroid of showers;x (cm);n showers",
+                         f"Run {runnumber}: Centroid of showers;x (cm);n showers",
                          100, -50,-5)
 h_centroid_y = ROOT.TH1F("h_centroid_y",
-                         "Centroid of showers;y (cm);n showers",
+                         f"Run {runnumber}: Centroid of showers;y (cm);n showers",
                          100, 10, 55)
 h_centroid_z = ROOT.TH1F("h_centroid_z",
-                         "Centroid of showers;z (cm);n showers",
+                         f"Run {runnumber}: Centroid of showers;z (cm);n showers",
                          120, 280,400)
 
 
@@ -255,7 +261,7 @@ if not b_test_only:
     h_ang_23.SetFillColor(4)
         
     
-    fig_fname = f"scifi_showering/tracks_vs_showers.pdf"
+    fig_fname = f"scifi_showering/tracks_vs_showers_{output_file_id}.pdf"
     c = ROOT.TCanvas()
     c.Print(f"{fig_fname}[")
 
