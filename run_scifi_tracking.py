@@ -1,40 +1,71 @@
 import os
 import ROOT
 ROOT.PyConfig.IgnoreCommandLineOptions = False
+ROOT.gROOT.SetBatch(True)
 ROOT.gInterpreter.ProcessLine('#include "sndGeometryGetter.h"')
 ROOT.gInterpreter.ProcessLine('#include "sndSciFiTools.h"')
 from ROOT.snd import analysis_tools as ana
 
+snd_root_path = os.environ["SNDSW_ROOT"]
+geo_paths = f"{snd_root_path}/analysis/tools/geo_paths.csv"
+
+import sys
+ROOT.argv = sys.argv[:] # give ROOT its original list
+# Now remove the flags that argparse shouldn't see.
+clean_argv = [a for a in sys.argv if a != '-b']
+
+from argparse import ArgumentParser
+parser = ArgumentParser()
+parser.add_argument("--run" , dest="run"      , default=0    , type=int)
+parser.add_argument("--mc"  , dest="mcfile"   , default="")
+parser.add_argument("--frac", dest="run_frac" , default=1.0  , type=float)
+parser.add_argument("--mcgeofile", dest="mcgeofile" , default="")
+args = parser.parse_args(clean_argv[1:])
+
+if (args.run < 4575 or args.run > 4854) and args.mcfile == "":
+    print("ERROR: Run number does not match emulsions Run 1 period and there is no MC file input.\n\tExiting.")
+    exit()
+
+import tools.run_database as rdb
+# check our database for non-zero entries
+
 
 #inp_filename = "scifi_eventfilter/scifi_selection_R4619_ev18860895.root"
-inp_filename = "scifi_eventfilter/scifi_selection_R6640_ev369364945.root"
+#inp_filename = "scifi_eventfilter/scifi_selection_R6640_ev369364945.root"
+inp_filename = "scifi_eventfilter/scifi_selection_sndLHC.Ntuple-TGeant4-160urad_100e6pp_FlukaEcut10_digCPP.root"
 inp_filename_nodir = inp_filename.split("/")[-1]
 output_file_id = inp_filename_nodir.replace("scifi_selection_","")
 output_file_id = output_file_id.replace(".root","")
 print("Output file tag:",output_file_id)
-runnumber = int(output_file_id.split("_")[0].replace("R",""))
-print("Run number parsed:",runnumber)
 
-#geo_file = "/afs/cern.ch/work/d/dannc/public/MuonMatching/files/geofile_sndlhc_TI18_2022_NagoyaEmu.root"
-geo_file = "/eos/experiment/sndlhc/convertedData/physics/2022/geofile_sndlhc_TI18_V4_2022.root"
-if runnumber > 5412:
-    geo_file = "/eos/experiment/sndlhc/convertedData/physics/2023/geofile_sndlhc_TI18_V3_2023.root"
-SciFiDet, MuFilter = ana.GetGeometry(geo_file)
+# geometry
+if args.mcfile == "":
+    geo_file = ana.GetGeoPath(geo_paths,args.run)
+    SciFiDet, MuFilter = ana.GetGeometry(geo_file)
+else:
+    if args.mcgeofile == "":
+        print("ERROR: MC analysis requested, but no geometry file provided. Exiting.")
+        exit()
+    else:
+        geo_file = args.mcgeofile
+        SciFiDet, MuFilter = ana.GetGeometry(geo_file)
 
 f = ROOT.TFile(inp_filename)
-
 # tasks
 ioman   = ROOT.FairRootManager.Instance()
-ioman.SetTreeName("rawConv")
+if args.mcfile == "":
+    ioman.SetTreeName("rawConv")
+else:
+    ioman.SetTreeName("cbmsim")
 
-run     = ROOT.FairRunAna()
+fairrun     = ROOT.FairRunAna()
 source  = ROOT.FairFileSource(f)
-run.SetSource(source)
+fairrun.SetSource(source)
 outFile = ROOT.TFile(f'scifi_tracking/myfile_run_scifi_tracking_{output_file_id}.root','RECREATE')
 sink    = ROOT.FairRootFileSink(outFile)
-run.SetSink(sink)
+fairrun.SetSink(sink)
 # Don't use FairRoot's default event header settings
-#run.SetEventHeaderPersistence(False)
+#fairrun.SetEventHeaderPersistence(False)
 
 #ioman.SetSource(source)
 #ioman.SetSink(sink)
@@ -46,15 +77,14 @@ xrdb.getContainer("FairGeoParSet").setStatic()
 # Add Hough Transform tracking
 import SndlhcMuonReco
 ht_sf_task = SndlhcMuonReco.MuonReco()
-run.AddTask(ht_sf_task)
-#ht_sf_task.SetParFile("{}/python/TrackingParams_V1_28November2022.xml".format(os.environ["SNDSW_ROOT"]))
-ht_sf_task.SetParFile("{}/python/TrackingParams.xml".format(os.environ["SNDSW_ROOT"]))
+fairrun.AddTask(ht_sf_task)
+ht_sf_task.SetParFile(f"{snd_root_path}/python/TrackingParams.xml")
 ht_sf_task.SetHoughSpaceFormat("linearSlopeIntercept")
 ht_sf_task.SetTrackingCase('passing_mu_Sf')
 #ht_sf_task.Passthrough()
 ht_sf_task.SetStandalone()
 
-run.Init()
+fairrun.Init()
 
 #run.Run(1,10)
 #exit()
@@ -105,8 +135,12 @@ ffh    = f.Get("FileHeader")
 ffh     .Write("FileHeader")
 cbmout = f.Get("cbmout")
 cbmout  .Write("cbmout")
-rawConv = f.Get("rawConv").CloneTree()
-rawConv .Write("rawConv")
+if args.mcfile == "":
+    rawConv = f.Get("rawConv").CloneTree()
+    rawConv .Write("rawConv")
+else:
+    cbmsim = f.Get("cbmsim").CloneTree()
+    cbmsim .Write("cbmsim")
 
 out_tree = ROOT.TTree("ht_scifi","Hough tracks in SciFi")
 
