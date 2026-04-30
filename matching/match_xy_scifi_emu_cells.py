@@ -23,21 +23,13 @@ args = parser.parse_args()
 
 
 basedir = "/eos/experiment/sndlhc/users/luarella/PassingMu/LHC_-160urad_magfield_2022TCL6_muons_rock_2e8pr_spectregen_18cmB21_transpVeto_SWANBINNING_V2"
-# 400
-#tfile_scifi = ROOT.TFile(f"{basedir}/sndLHC.Ntuple-TGeant4_digCPP_120-s1_400-s2_120-s3_nomasking-pars_MuonTracks_hist.root")
-# 600
 fname_scifi = f"{basedir}/sndLHC.Ntuple-TGeant4_digCPP_120-s1_600-s2_120-s3_nomasking-pars_MuonTracks_hist.root"
-# remake (500)
-#tfile_scifi = ROOT.TFile(f"{basedir}/remake_tgr_500.root")
 if args.data:
     basedir="/eos/experiment/sndlhc/users/luarella/data/2022/"
-    #fname_scifi = f"{basedir}/sndsw_raw_120-s1_600-s2_120-s3_nomasking-pars_MuonTracks_hist_0-8.root"
-    #fname_scifi = f"{basedir}/RUN1_120-s1_600-s2_120-s3_nomasking-pars_MuonTracks_hist.root"
     fname_scifi = f"{basedir}/RUN1_50000-s1_600-s2_50000-s3_nomasking-pars_MuonTracks_hist.root"
 print("Scifi file",fname_scifi)
 tfile_scifi = ROOT.TFile(fname_scifi)
     
-#tfile_emu        = ROOT.TFile(f"/afs/cern.ch/work/l/luarella/private/sf_emu_matching/emu/root/brick21_binning100um_top.root")
 fname_emu = "/afs/cern.ch/work/l/luarella/private/sf_emu_matching/emu/root/brick21_binning100um_plates_bintree_exitshw_voxthres4_clus0.root"
 if args.data:
     fname_emu = "/afs/cern.ch/work/l/luarella/private/sf_emu_matching/emu/root/brick21_binning100um_plates_data_bintree_exitshw_voxthres4_clus0.root"
@@ -53,8 +45,6 @@ tgr_true = tfile_scifi.Get("tgr_true")
 tgr_true.SetMarkerColor(ROOT.kGreen)
 tgr_true.SetMarkerStyle(50)
 tgr_true.SetMarkerSize(3)
-
-
 
 x_t = -45.9
 y_t = 15.2
@@ -76,7 +66,6 @@ print(f"Translation applied: x = {x_t}, y = {y_t}")
 
 
 from math import sqrt
-
 
 def dist(x1, y1, x2, y2):
     return sqrt( (x2-x1)**2 + (y2-y1)**2)
@@ -157,12 +146,9 @@ h_close_matches = ROOT.TH1F("h_close_matches",";Close matches per cell;Cells",20
 for cellx in range(1,19):
     if args.cellx != 0 and cellx != args.cellx:
         continue
-#for cellx in range(11,12):
     for celly in range(1,19):
         if args.celly != 0 and celly != args.celly:
             continue
-
-#    for celly in range(3,4):
         h_cell = tfile_emu.Get(f"h2_{cellx}_{celly}")
         if h_cell == None:
             print(f"Could not find cell {cellx}, {celly}!")
@@ -171,8 +157,6 @@ for cellx in range(1,19):
         h_cell.GetXaxis().SetNdivisions(505)
         h_cell.GetZaxis().SetTitleOffset(1.35)
         tgr_emu = tfile_emu.Get(f"tgr_{cellx}_{celly}")
-
-        #tgr_emu = translate_emulsion(tgr_emu, args.emutx, args.emuty)
         
         h_initial_emu.Fill(tgr_emu.GetN())
         h_cell.SetTitle(f"Cell {cellx}, {celly};x (cm);y (cm);First segment count")
@@ -254,20 +238,18 @@ for cellx in range(1,19):
             tgr_sf_move.SetMarkerColor(tgr_good_sfi.GetMarkerColor())
             tgr_sf_move.SetMarkerStyle(tgr_good_sfi.GetMarkerStyle())
             tgr_sf_move.SetMarkerSize(tgr_good_sfi.GetMarkerSize())
-            # now calculate a dist moving all other scifi to this position and sum it to total
             movex_avg += movex
             movey_avg += movey
-            #print(f"Doing i {i}")
+            # now calculate a dist moving all other scifi to this position and sum it to total
+            # not used really
             for j, (xj, yj) in enumerate(zip(tgr_good_sfi.GetX(), tgr_good_sfi.GetY())):
                 cloj, movxj, movyj, min_dist_j = move_to_closest(xj+movex,yj+movey,tgr_good_emu)
                 dist_sum += min_dist_j
-                #print(f"\tj {j} mindist {min_dist_j}, dist_sum update {dist_sum}")
                 tgr_sf_move.AddPoint(xj+movex,yj+movey)
                 
-            
-            #print(f"Final dist_sum for i: {dist_sum}")
             l_cell_diff.append((i,dist_sum))
             if cellx == 7 and celly == 12:
+                # benchmark
                 h_cell.SetTitle(f"Cell {cellx}, {celly}, move scifi {i}, sum of dist/N {dist_sum/tgr_sf_move.GetN():.3f}, movex {movex:.3f}, movey {movey:.3f}")
                 h_cell.Draw("colz")
                 tgr_good_emu.Draw("same P")
@@ -279,16 +261,6 @@ for cellx in range(1,19):
         h_global_x_avg.Fill(movex_avg)
         h_global_y_avg.Fill(movey_avg)
         
-            
-            
-        #print(f"Final dist_sums")
-        #for l in l_cell_diff:
-        #    print(l)
-        
-
-
-        
-
 
 #ROOT.gStyle.SetOptStat(1)
 if not args.goff:
@@ -380,6 +352,4 @@ if not args.goff:
     h_close_matches.Draw()        
     c.Print(f"{out_pdf}")
 
-
     c.Print(f"{out_pdf}]")
-        
