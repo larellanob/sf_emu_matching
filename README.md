@@ -1,6 +1,19 @@
 Matching between SciFi and emulsion data.
 
-Needs sndsw
+Needs sndsw and FEDRA
+
+# run_filter_and_track.py
+
+Performs a quick filtering of events on electronics data based on the
+number of hits in SciFi stations 1, 2 and 3 (using arguments --si,
+i=1,2,3). it then performs tracking in the passing events.
+
+The output is two files,
+ 1. The `cbmsim` TTree with the reconstructed SciFi muon tracks as a new branch
+ 2. A histogram file for studying performance
+
+
+
 1. run_scifi_eventfilter.py
 
    filters events according to scifi hits. selection is so far
