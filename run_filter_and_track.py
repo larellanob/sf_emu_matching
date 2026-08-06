@@ -18,7 +18,8 @@ parser.add_argument("--mcfile", dest="mcfile"  , type=int)
 parser.add_argument("--data"  , action='store_true')
 parser.add_argument("--run"   , dest="run"     , type=int)
 parser.add_argument("--nevents", dest="nevents", type=int, default=0     )
-parser.add_argument("--workdir", dest="workdir", type=str, default="/afs/cern.ch/user/l/luarella/work-luarella/private/sf_emu_matching/")
+parser.add_argument("--startevent", dest="startevent", default=0, type=int  )
+parser.add_argument("--workdir", dest="workdir", type=str, default="/afs/cern.ch/user/l/luarella/work-luarella/public/sf_emu_matching/")
 parser.add_argument("--s1"    , dest="s1cut"   , type=int, default=120)
 parser.add_argument("--s2"    , dest="s2cut"   , type=int, default=600)
 parser.add_argument("--s3"    , dest="s3cut"   , type=int, default=120)
@@ -52,13 +53,14 @@ def extrapolation(pos,mom,z):
     return ROOT.Math.XYZPoint(unk_x, unk_y, unk_z)
 
 snd_root_path = os.environ["SNDSW_ROOT"]
-# data / geo paths
+# data geo paths
 run_paths = f"{snd_root_path}/analysis/tools/data_paths.csv"
 geo_paths = f"{snd_root_path}/analysis/tools/geo_paths.csv"
 input_filename = args.file_in
 out_tree_filename = input_filename.replace(".root",f"_{args.s1cut}-s1_{args.s2cut}-s2_{args.s3cut}-s3_{args.trackpars}-pars_MuonTracks.root")
 if not args.data:
-    pass_mu_sample = "LHC_-160urad_magfield_2022TCL6_muons_rock_2e8pr_spectregen_18cmB21_transpVeto_SWANBINNING_V2"
+    #pass_mu_sample = "LHC_-160urad_magfield_2022TCL6_muons_rock_2e8pr_spectregen_18cmB21_transpVeto_SWANBINNING_V2"
+    pass_mu_sample = "ALL_lhc_ir1_coll_2023_exp001_fort_spectregen_SWANBINNING"
     base_input_dir = f"/eos/experiment/sndlhc/users/luarella/PassingMu/{pass_mu_sample}"
     base_out_dir = f"/eos/experiment/sndlhc/users/luarella/PassingMu/{pass_mu_sample}"
     if args.geofile == None:
@@ -66,9 +68,12 @@ if not args.data:
     else:
         geo_file = args.geofile
     full_input_filename = f"{base_input_dir}/{args.mcfile}/{input_filename}"
+    #full_input_filename = f"{input_filename}"
     full_out_tree_filename = f"{base_out_dir}/{args.mcfile}/{out_tree_filename}"
+    #full_out_tree_filename = f"{out_tree_filename}"
     
 if args.data:
+    #input_filename =
     base_out_dir = "/eos/experiment/sndlhc/users/luarella/data/2022"
     base_input_dir = f"/eos/experiment/sndlhc/convertedData/physics/2022"
     if args.run == None:
@@ -78,6 +83,7 @@ if args.data:
     full_input_filename = f"{base_input_dir}/run_{str(args.run).zfill(6)}/{input_filename}"
     full_out_tree_filename = f"{base_out_dir}/run_{str(args.run).zfill(6)}/{out_tree_filename}"
 
+
 print("Geo file:",geo_file)
 
 
@@ -85,6 +91,9 @@ print("(Full path) input filename", full_input_filename)
 print("(Full path) output filename", full_out_tree_filename)
 ch = ROOT.TChain("cbmsim")
 ch.Add(full_input_filename)
+
+
+#print(f"Input filename: {input_filename}")
 
 SciFiDet, MuFilter = ana.GetGeometry(geo_file)
 myopt = ROOT.snd.Configuration.Option.ti18_2022_2023
@@ -115,8 +124,10 @@ xrdb.getContainer("FairGeoParSet").setStatic()
 import SndlhcMuonReco
 ht_sf_task = SndlhcMuonReco.MuonReco()
 fairrun.AddTask(ht_sf_task)
-
 # non-default tracking parameters
+# mask scifi stations with nhits > 10
+
+
 parfile = f"/{args.workdir}/scifi_tracking/tracking_parameters/TrackingParams_{args.trackpars}.xml"
 print(f"Using parameter file: {parfile}")
 ht_sf_task.SetParFile(f"{parfile}")
@@ -130,11 +141,15 @@ fairrun.Init()
 to_loop = ioman.GetInTree().GetEntries()
 if args.nevents != 0:
     to_loop = args.nevents
+    '''
+    if args.startevent != 0:
+        to_loop = range(args.startevent,args.startevent+args.nevents)
+    '''
+    #out_tree_filename = input_filename.replace(".root",f"_MuonTracks_ev{to_loop}.root")
 print("OUT FILENAME",full_out_tree_filename)
 out_file   = ROOT.TFile(full_out_tree_filename,"recreate")
 
 # copy other stuff from source file
-# actually dont think we need them
 '''
 bl     = f.Get("BranchList")
 bl      .Write("BranchList", ROOT.TObject.kSingleKey)
@@ -284,6 +299,7 @@ total_tracks = 0
 import math
 print("about to enter event loop")
 for ievent, event in enumerate(ioman.GetInChain()):
+    if ievent < args.startevent : continue
     ch.GetEntry(ievent) # need to loop this one as well for the cloned tree
     if args.mcfile != None:
         eMCEvt[0] = 100000*(args.mcfile-1)+ievent
@@ -312,8 +328,7 @@ for ievent, event in enumerate(ioman.GetInChain()):
     v_hits = ROOT.std.vector('int')(5, 0)
     ana.getSciFiHitsPerStation(event.Digi_ScifiHits,h_hits,v_hits)
 
-    # the hits in h_hits and v_hits have no timing correction
-    # will get time-corrected hits in h_hits_corr and v_hits_corr
+    # those hits have no timing correction
     h_hits_corr = ROOT.std.vector('int')(5, 0)
     v_hits_corr = ROOT.std.vector('int')(5, 0)
     for s in range(1,6):
@@ -367,8 +382,7 @@ for ievent, event in enumerate(ioman.GetInChain()):
         for s in range(0,5):
             print(f"S    {s+1}: {h_hits[s]+v_hits[s]}")
             print(f"Scorr{s+1}: {h_hits_corr[s]+v_hits_corr[s]}")
-
-    # start filling histograms
+           
     h1["h_energy_truth"].Fill(muon_energy)
     sum_corr_hits = 0
     for s in range(1,6):
@@ -378,7 +392,6 @@ for ievent, event in enumerate(ioman.GetInChain()):
     h1["h_nhits_s12345"].Fill(event.Digi_ScifiHits.GetEntries())
     h1["h_nhits_s12345_corr"].Fill(sum_corr_hits)
 
-    # cuts on number of hits in s1 and s2
     if h_hits_corr[0]+v_hits_corr[0] > args.s1cut:
         continue
     if h_hits_corr[1]+v_hits_corr[1] < args.s2cut:
@@ -387,12 +400,10 @@ for ievent, event in enumerate(ioman.GetInChain()):
     h1["h_nhits_s1_cut1"].Fill(h_hits[0]+v_hits[0])
     h1["h_nhits_s2_cut1"].Fill(h_hits[1]+v_hits[1])
     h1["h_nhits_s3_cut1"].Fill(h_hits[2]+v_hits[2])
-
-    # cut on number of hits in s3
+    
+    
     if h_hits_corr[2]+v_hits_corr[2] > args.s3cut:
         continue
-
-    # passing events
     h1["h_energy_truth_cut2"].Fill(muon_energy)
     h1["h_nhits_s1_cut2"].Fill(h_hits[0]+v_hits[0])
     h1["h_nhits_s2_cut2"].Fill(h_hits[1]+v_hits[1])
@@ -409,7 +420,7 @@ for ievent, event in enumerate(ioman.GetInChain()):
             n_scifi_tracking[s] = 1
     n_masked[0] = n_masked_
     
-    # perform muon tracking on passing events
+    # muon tracking
     ht_sf_task.kalman_tracks.Clear()
     ht_sf_task.Exec(0)
     myTracks = ht_sf_task.kalman_tracks
@@ -451,11 +462,8 @@ for ievent, event in enumerate(ioman.GetInChain()):
         s2_builtin_y[0] = rtrk_xyz_builtin.Y()
         s2_builtin_z[0] = rtrk_xyz_builtin.Z()
 
-        # my own extrapolation and builtin extrapolation are very similar
-
     if args.oob:
         # these tracks fall outside brick 21
-        # discard them using the --oob argument
         if s2_reco_x[0] < -25.9 or s2_reco_y[0] > 33.65:
             print(f"RECO track out of bounds event {ievent}")
             total_tracks -=1
@@ -473,13 +481,13 @@ for ievent, event in enumerate(ioman.GetInChain()):
     ttrk_min_y = 0.0
     ttrk_min_z = 500.0
     
-    # loop over scifipoints (sfp) when using MC
-    # we will fill a TGraph with the most upstream muon sfp (lowest Z) in S2
+    # loop over sfp
     if not args.data:
         for sfp in event.ScifiPoint:
             if sfp.station() != 2:
                 continue
             if sfp.GetTrackID()==0:
+                # we will fill the TGraph with the most upstream scifipoint (lowest Z)
                 if sfp.GetZ() < ttrk_min_z:
                     ttrk_min_x = sfp.GetX()
                     ttrk_min_y = sfp.GetY()
@@ -487,17 +495,20 @@ for ievent, event in enumerate(ioman.GetInChain()):
         s2_true_x[0] = ttrk_min_x
         s2_true_y[0] = ttrk_min_y
         s2_true_z[0] = ttrk_min_z
+        
+        
+        
 
-    # fill the output ttree
+        
     cbmsim.Fill()
     passing_events+=1
-# write the output ttree
 cbmsim .Write("cbmsim")
 print("seen events",passing_events)
 print("total tracks:",total_tracks)
 
 
-# write histograms to _hist file
+
+# write histograms
 hist_filename = full_out_tree_filename.replace(".root","_hist.root")
 hist_file = ROOT.TFile(hist_filename,"recreate")
 for h in h1:
@@ -505,6 +516,7 @@ for h in h1:
 
 # we now loop over the tracks we just created to make the tgraph and save that too.
 print("Now looping over muon tracks and projecting to S2")
+
 
 tgr_reco = ROOT.TGraph()
 tgr_builtin = ROOT.TGraph()
@@ -524,3 +536,5 @@ tgr_true.Write()
 
 
 hist_file.Close()
+
+
