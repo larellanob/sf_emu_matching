@@ -51,53 +51,125 @@ shw_start_z_max = 309
 
 bins_ene = array('f',[0, 100, 200, 300, 400, 500, 600, 700, 800, 1000, 1200, 1400, 1600, 2000, 3000, 5000])
 bins_ene_y = array('f', [0.0, 1.1])
-h1["h2_eff_base"] = ROOT.TH2F("h1_eff_base",";Truth energy (GeV);Efficiency"            , len(bins_ene)-1, bins_ene, len(bins_ene_y)-1, bins_ene_y)
-h1["h1_ene_reco"] = ROOT.TH1F("h1_ene_reco","Reconstructed clusters;Truth energy (GeV)"            , len(bins_ene)-1, bins_ene)
-h1["h1_ene_true"] = ROOT.TH1F("h1_ene_true",          "True showers;Truth energy (GeV)"            , len(bins_ene)-1, bins_ene)
-h1["h1_ene_reco1"] = ROOT.TH1F(f"h1_ene_reco1",f"Reconstructed clusters, z>{shw_start_z_min};Truth energy (GeV)"    , len(bins_ene)-1, bins_ene)
-h1["h1_ene_true1"] = ROOT.TH1F(f"h1_ene_true1",          f"True showers, z>{shw_start_z_min};Truth energy (GeV)"    , len(bins_ene)-1, bins_ene)
-h1["h1_ene_reco2"] = ROOT.TH1F(f"h1_ene_reco2",f"Reconstructed clusters, {shw_start_z_min}<z<{shw_start_z_max};Truth energy (GeV)", len(bins_ene)-1, bins_ene)
-h1["h1_ene_true2"] = ROOT.TH1F(f"h1_ene_true2",          f"True showers, {shw_start_z_min}<z<{shw_start_z_max};Truth energy (GeV)", len(bins_ene)-1, bins_ene)
-h1["h1_ene_reco3"] = ROOT.TH1F(f"h1_ene_reco3",f"Reconstructed clusters, {shw_start_z_max}<z;Truth energy (GeV)"    , len(bins_ene)-1, bins_ene)
-h1["h1_ene_true3"] = ROOT.TH1F(f"h1_ene_true3",          f"True showers, {shw_start_z_max}<z;Truth energy (GeV)"    , len(bins_ene)-1, bins_ene)
-
-h1["h1_ene_reco4"] = ROOT.TH1F(f"h1_ene_reco4",f"Reconstructed clusters, {shw_start_z_max}<z;Truth energy (GeV)"    , len(bins_ene)-1, bins_ene)
-h1["h1_ene_true4"] = ROOT.TH1F(f"h1_ene_true4",          f"True showers, {shw_start_z_max}<z;Truth energy (GeV)"    , len(bins_ene)-1, bins_ene)
+h1["h2_eff_base"] = ROOT.TH2F("h1_eff_base",
+                              ";Truth energy (GeV);Efficiency",
+                              len(bins_ene)-1, bins_ene,
+                              len(bins_ene_y)-1, bins_ene_y)
+h1["h1_ene_reco"] = ROOT.TH1F("h1_ene_reco",
+                              "Reconstructed clusters;Truth energy (GeV)",
+                              len(bins_ene)-1, bins_ene)
+h1["h1_ene_true"] = ROOT.TH1F("h1_ene_true",
+                              "True showers;Truth energy (GeV)",
+                              len(bins_ene)-1, bins_ene)
+h1["h1_ene_reco1"] = ROOT.TH1F(f"h1_ene_reco1",
+                               f"Reconstructed clusters, z>{shw_start_z_min};Truth energy (GeV)",
+                               len(bins_ene)-1, bins_ene)
+h1["h1_ene_true1"] = ROOT.TH1F(f"h1_ene_true1",
+                               f"True showers, z>{shw_start_z_min};Truth energy (GeV)",
+                               len(bins_ene)-1, bins_ene)
+h1["h1_ene_reco2"] = ROOT.TH1F(f"h1_ene_reco2",
+                               f"Reconstructed clusters, {shw_start_z_min}<z<{shw_start_z_max};Truth energy (GeV)",
+                               len(bins_ene)-1, bins_ene)
+h1["h1_ene_true2"] = ROOT.TH1F(f"h1_ene_true2",
+                               f"True showers, {shw_start_z_min}<z<{shw_start_z_max};Truth energy (GeV)",
+                               len(bins_ene)-1, bins_ene)
+h1["h1_ene_reco3"] = ROOT.TH1F(f"h1_ene_reco3",
+                               f"Reconstructed clusters, {shw_start_z_max}<z;Truth energy (GeV)",
+                               len(bins_ene)-1, bins_ene)
+h1["h1_ene_true3"] = ROOT.TH1F(f"h1_ene_true3",
+                               f"True showers, {shw_start_z_max}<z;Truth energy (GeV)",
+                               len(bins_ene)-1, bins_ene)
+h1["h1_ene_reco4"] = ROOT.TH1F(f"h1_ene_reco4",
+                               f"Reconstructed clusters, {shw_start_z_max}<z;Truth energy (GeV)",
+                               len(bins_ene)-1, bins_ene)
+h1["h1_ene_true4"] = ROOT.TH1F(f"h1_ene_true4",
+                               f"True showers, {shw_start_z_max}<z;Truth energy (GeV)",
+                               len(bins_ene)-1, bins_ene)
 
 
 # cluster selection cuts
 # look at energy spectrum (cut low energy)
 l_cut_ntracks = [ 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200 ]
 for ntrks in l_cut_ntracks:
-    h1[f"h1_ene_reco_cutntracks_{ntrks}"] = ROOT.TH1F(f"h1_ene_reco_cutntracks_{ntrks}",f"Reconstructed clusters, ntracks > {ntrks};Truth energy (GeV)"    , len(bins_ene)-1, bins_ene)
-    h1[f"h1_ene_true_cutntracks_{ntrks}"] = ROOT.TH1F(f"h1_ene_true_cutntracks_{ntrks}",          f"True showers, ntracks > {ntrks};Truth energy (GeV)"    , len(bins_ene)-1, bins_ene)
+    h1[f"h1_ene_reco_cutntracks_{ntrks}"] = ROOT.TH1F(f"h1_ene_reco_cutntracks_{ntrks}",
+                                                      f"Reconstructed clusters, ntracks > {ntrks};Truth energy (GeV)",
+                                                      len(bins_ene)-1, bins_ene)
+    h1[f"h1_ene_true_cutntracks_{ntrks}"] = ROOT.TH1F(f"h1_ene_true_cutntracks_{ntrks}",
+                                                      f"True showers, ntracks > {ntrks};Truth energy (GeV)",
+                                                      len(bins_ene)-1, bins_ene)
 
 
 h2 = {}
 xend = -6
 xini = -28
 xbin = int((xend-xini)*10000. / args.binning)
-ut.bookHist(h2, "h2_x",";Initial #it{x} truth (cm);Initial #it{x} cluster reco (cm)", xbin, xini, xend, xbin, xini, xend)
+ut.bookHist(h2, "h2_x",
+            ";Initial #it{x} truth (cm);Initial #it{x} cluster reco (cm)",
+            xbin, xini, xend,
+            xbin, xini, xend)
 yend = 35
 yini = 15
 ybin = int((yend-yini)*10000. / args.binning)
-ut.bookHist(h2, "h2_y",";Initial #it{y} truth (cm);Initial #it{y} cluster reco (cm)", ybin, yini, yend, ybin, yini, yend)
-ut.bookHist(h2, "h2_z",";Initial #it{z} truth (cm);Initial #it{z} cluster reco (cm)", 100, 302.0, 312.0,100, 302.0, 312.0)
-ut.bookHist(h2, "h2_zp",";Initial #it{z} truth (cm);Initial #it{z} cluster reco (plate)", 100, 302.0, 312.0,56, 1,57)
-ut.bookHist(h2, "h2_e",";Truth shower energy (GeV);Number of tracks", 500, 0.0, 5000,210, 0,2100)
-ut.bookHist(h2, "h2_e2",f"{shw_start_z_min} < True z < {shw_start_z_max};Truth shower energy (GeV);Number of tracks", 500, 0.0, 5000,210, 0,2100)
+ut.bookHist(h2, "h2_y",
+            ";Initial #it{y} truth (cm);Initial #it{y} cluster reco (cm)",
+            ybin, yini, yend,
+            ybin, yini, yend)
+ut.bookHist(h2, "h2_z",
+            ";Initial #it{z} truth (cm);Initial #it{z} cluster reco (cm)",
+            100, 302.0, 312.0,
+            100, 302.0, 312.0)
+ut.bookHist(h2, "h2_zp",
+            ";Initial #it{z} truth (cm);Initial #it{z} cluster reco (plate)",
+            100, 302.0, 312.0,
+            56, 1, 57)
+ut.bookHist(h2, "h2_e",
+            ";Truth shower energy (GeV);Number of tracks",
+            500, 0.0, 5000.0,
+            210, 0, 2100)
+ut.bookHist(h2, "h2_e2",
+            f"{shw_start_z_min} < True z < {shw_start_z_max};Truth shower energy (GeV);Number of tracks",
+            500, 0.0, 5000.0,
+            210, 0, 2100)
 
 # cluster vs reco track
-ut.bookHist(h2, "h2_x_reco",";Scifi reco #it{x} (cm);Exit #it{x} cluster reco (cm)", xbin, xini, xend, xbin, xini, xend)
-ut.bookHist(h2, "h2_y_reco",";Scifi reco #it{y} (cm);Exit #it{y} cluster reco (cm)", ybin, yini, yend, ybin, yini, yend)
-ut.bookHist(h2, "h2_z_reco",";Scifi reco #it{z} (cm);Exit #it{z} cluster reco (cm)", 100, 302.0, 312.0,100, 302.0, 312.0)
+ut.bookHist(h2, "h2_x_reco",
+            ";Scifi reco #it{x} (cm);Exit #it{x} cluster reco (cm)",
+            xbin, xini, xend,
+            xbin, xini, xend)
+ut.bookHist(h2, "h2_y_reco",
+            ";Scifi reco #it{y} (cm);Exit #it{y} cluster reco (cm)",
+            ybin, yini, yend,
+            ybin, yini, yend)
+ut.bookHist(h2, "h2_z_reco",
+            ";Scifi reco #it{z} (cm);Exit #it{z} cluster reco (cm)",
+            100, 302.0, 312.0,
+            100, 302.0, 312.0)
 
 exit_plate = 54
 # exiting cluster selection
-ut.bookHist(h2, "h2_x_reco_exit",f"Cluster end > plate {exit_plate};Scifi reco #it{{x}} (cm);Exit #it{{x}} cluster reco (cm)", xbin, xini, xend, xbin, xini, xend)
-ut.bookHist(h2, "h2_y_reco_exit",f"Cluster end > plate {exit_plate};Scifi reco #it{{y}} (cm);Exit #it{{y}} cluster reco (cm)", ybin, yini, yend, ybin, yini, yend)
-ut.bookHist(h2, "h2_z_reco_exit",f"Cluster end > plate {exit_plate};Scifi reco #it{{z}} (cm);Exit #it{{z}} cluster reco (cm)", 100, 302.0, 312.0,100, 302.0, 312.0)
+ut.bookHist(h2, "h2_x_reco_exit",
+            f"Cluster end > plate {exit_plate};Scifi reco #it{{x}} (cm);Exit #it{{x}} cluster reco (cm)",
+            xbin, xini, xend,
+            xbin, xini, xend)
+ut.bookHist(h2, "h2_y_reco_exit",
+            f"Cluster end > plate {exit_plate};Scifi reco #it{{y}} (cm);Exit #it{{y}} cluster reco (cm)",
+            ybin, yini, yend,
+            ybin, yini, yend)
+ut.bookHist(h2, "h2_z_reco_exit",
+            f"Cluster end > plate {exit_plate};Scifi reco #it{{z}} (cm);Exit #it{{z}} cluster reco (cm)",
+            100, 302.0, 312.0,
+            100, 302.0, 312.0)
 
+
+h1["h_distx"] = ROOT.TH1F("h_distx",
+                          ";Distance x emu - scifi (cm);Entries",
+                          100,0,1000)
+h1["h_disty"] = ROOT.TH1F("h_disty",
+                          ";Distance y emu - scifi (cm);Entries",
+                          100,0,1000)
+h1["h_dist"] = ROOT.TH1F("h_dist",
+                         ";Distance x emu - scifi (cm);Entries",
+                         100,0,1000)
 
 c = ROOT.TCanvas()
 c.SetCanvasSize(1000,1000)
@@ -169,7 +241,13 @@ for ievent, event in enumerate(ttree_sync):
         if len(event.shw_x_end) < 1:
             # fill bkg2
             continue
-        dist = math.sqrt(pow(event.reco_s2_x[0]-event.shw_x_end[0],2)+ pow(event.reco_s2_y[0]-event.shw_y_end[0],2) )
+        distx = abs(event.reco_s2_x-event.shw_x_end[0])
+        disty = abs(event.reco_s2_y-event.shw_y_end[0])
+        dist = math.sqrt(pow(distx,2)+ pow(disty,2) )
+
+        h1["h_distx"].Fill(distx)
+        h1["h_disty"].Fill(disty)
+        h1["h_dist"].Fill(dist)
         
         if event.shw_ntracks[0] > ntrks:
             #print("filling ntrks",ntrks,event.mc_shw_e[0])

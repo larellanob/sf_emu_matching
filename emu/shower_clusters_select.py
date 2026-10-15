@@ -18,6 +18,8 @@ tfile_emu = ROOT.TFile(args.input)
 print("input file",tfile_emu)
 ttree_emu = tfile_emu.Get("emu_match")
 
+tgr_full = ROOT.TGraph()
+tgr_full.SetName("tgr_full")
 d_tgraphs = {}
 for x in range(1,19):
     for y in range(1,19):
@@ -26,10 +28,22 @@ for x in range(1,19):
         tgr.SetName(f"tgr_{x}_{y}")
         d_tgraphs[f"tgr_{x}_{y}"] = tgr
 
+data = False
+x_t = -45.9
+y_t =  15.2
+if data:
+    x_t += 19.5
+    y_t += 00.0
+
+def emu_to_sf(emux, emuy):
+    return (emux/10000.)+x_t, (emuy/10000.)+y_t
+
+nselected = 0
 print("will loop through events")
+
 for ievent, event in enumerate(ttree_emu):
     # cut on ntracks
-    if event.shw_ntracks < 20:
+    if event.shw_ntracks < args.ntracks:
         continue
 
     # cut on plate number (shower start)
@@ -42,9 +56,14 @@ for ievent, event in enumerate(ttree_emu):
     if event.shw_z_end < args.endplate:
         continue
 
-    d_tgraphs[f"tgr_{event.shw_cell_x}_{event.shw_cell_y}"].AddPoint(event.shw_x_end, event.shw_y_end)
-
-print("finished loop through events")
+    nselected += 1
+    endx, endy = emu_to_sf(event.shw_x_end, event.shw_y_end)
+    #d_tgraphs[f"tgr_{event.shw_cell_x}_{event.shw_cell_y}"].AddPoint(event.shw_x_end, event.shw_y_end)
+    d_tgraphs[f"tgr_{event.shw_cell_x}_{event.shw_cell_y}"].AddPoint(endx, endy)
+    #tgr_full.AddPoint(event.shw_x_end, event.shw_y_end)
+    tgr_full.AddPoint(endx, endy)
+print("Finished loop through showers")
+print(f"Selected {nselected} showers")
 fname_in  = args.input.split("/")[-1]
 fname_out = f"root/{fname_in}"
 fname_out = fname_out.replace(".root",f"_ntrk{args.ntracks}_zini{args.minplate}-{args.maxplate}_zend{args.endplate}.root")
@@ -53,13 +72,12 @@ tfile_out = ROOT.TFile(fname_out,"recreate")
 for x in range(1,19):
     for y in range(1,19):
         d_tgraphs[f"tgr_{x}_{y}"].Write()
+tgr_full.Write()
 
 if args.inputscifi != "":
     fname_in  = args.inputscifi.split("/")[-1]
     dir_in = args.inputscifi.replace(f'{fname_in}',"")
     fname_out = fname_in.replace(".root","_tgr.root")
-    fname_out = f"{dir_in}/{fname_out}")
+    fname_out = f"{dir_in}/{fname_out}"
     
     tfile_out = ROOT.TFile(fname_out,"recreate")
-    
-    

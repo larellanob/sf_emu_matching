@@ -392,9 +392,15 @@ for ievent, event in enumerate(ioman.GetInChain()):
     h1["h_nhits_s12345"].Fill(event.Digi_ScifiHits.GetEntries())
     h1["h_nhits_s12345_corr"].Fill(sum_corr_hits)
 
-    if h_hits_corr[0]+v_hits_corr[0] > args.s1cut:
+    # corrected nhits doesnt work for mc
+    if h_hits_corr[0]+v_hits_corr[0] > args.s1cut and args.data:
         continue
-    if h_hits_corr[1]+v_hits_corr[1] < args.s2cut:
+    elif h_hits[0]+v_hits[0] > args.s1cut and not args.data:
+        continue
+
+    if h_hits_corr[1]+v_hits_corr[1] < args.s2cut and args.data:
+        continue
+    elif h_hits[1]+v_hits[1] < args.s2cut and not args.data:
         continue
     h1["h_energy_truth_cut1"].Fill(muon_energy)
     h1["h_nhits_s1_cut1"].Fill(h_hits[0]+v_hits[0])
@@ -402,7 +408,9 @@ for ievent, event in enumerate(ioman.GetInChain()):
     h1["h_nhits_s3_cut1"].Fill(h_hits[2]+v_hits[2])
     
     
-    if h_hits_corr[2]+v_hits_corr[2] > args.s3cut:
+    if h_hits_corr[2]+v_hits_corr[2] > args.s3cut and args.data:
+        continue
+    elif h_hits[2]+v_hits[2] > args.s3cut and not args.data:
         continue
     h1["h_energy_truth_cut2"].Fill(muon_energy)
     h1["h_nhits_s1_cut2"].Fill(h_hits[0]+v_hits[0])

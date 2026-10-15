@@ -38,27 +38,28 @@ if args.sample == "data":
     is_mc = False
 xi_cell, xf_cell, yi_cell, yf_cell = get_cell_borders(args.cellx, args.celly, args.brick, is_mc)
 
+# work dir
+eos_dir = f"/eos/experiment/sndlhc/users/luarella"
+work_dir = f"/afs/cern.ch/user/l/luarella/work-luarella/public/sf_emu_matching"
+
 # fedra file
 if args.sample == "V2":
     fedra_dir   = f"/eos/experiment/sndlhc/users/dancc/FEDRA/muon_Euniform_RUN1_V2/cell_reco"
-    histo_dir = f"/eos/experiment/sndlhc/users/luarella/emu/LHC_-160urad_magfield_2022TCL6_muons_rock_2e8pr_spectregen_18cmB21_transpVeto_SWANBINNING_V2"
-    output_dir = f"/afs/cern.ch/user/l/luarella/work-luarella/private/sf_emu_matching/emu/root/clusters_V2"
+    histo_dir = f"{eos_dir}/emu/LHC_-160urad_magfield_2022TCL6_muons_rock_2e8pr_spectregen_18cmB21_transpVeto_SWANBINNING_V2"
+    output_dir = f"{work_dir}/emu/root/clusters_V2"
 elif args.sample == "FLUKA":
-    fedra_dir   = f"/eos/experiment/sndlhc/users/dancc/FEDRA/muon_Euniform_RUN1_FLUKA25/cell_reco_retrk"
-    histo_dir = f"/eos/experiment/sndlhc/users/luarella/emu/ALL_lhc_ir1_coll_2023_exp001_fort_spectregen_SWANBINNING"
-    output_dir = f"/afs/cern.ch/user/l/luarella/work-luarella/private/sf_emu_matching/emu/root/fluka"
+    fedra_dir   = f"/eos/experiment/sndlhc/users/dancc/FEDRA/muon_Euniform_RUN1_FLUKA25/b0000{args.brick}/cell_reco_retrk"
+    histo_dir = f"{eos_dir}/emu/ALL_lhc_ir1_coll_2023_exp001_fort_spectregen_SWANBINNING"
+    output_dir = f"{work_dir}/emu/root/fluka"
 elif args.sample == "data":
     fedra_dir = f"/eos/experiment/sndlhc/emulsionData/emureco_Napoli/RUN1/b000121/cells"
-    histo_dir = f"/eos/experiment/sndlhc/users/luarella/emu/data"
-    output_dir = f"/afs/cern.ch/user/l/luarella/work-luarella/private/sf_emu_matching/emu/root/clusters_data"
+    histo_dir = f"{eos_dir}/emu/data"
+    output_dir = f"{work_dir}/emu/root/clusters_data"
 
-    
 fedra_fname = f"{fedra_dir}/cell_{args.cellx}0_{args.celly}0/b0000{args.brick}/b0000{args.brick}.0.{args.cellx}.{args.celly}.trk.root"
 if args.sample == "data":
     fedra_fname = f"{fedra_dir}/cell_{args.cellx}0_{args.celly}0/b0000{args.brick}/b0000{args.brick}.0.0.0.trk.root"
 
-# work dir
-work_dir = f"/afs/cern.ch/user/l/luarella/work-luarella/private/sf_emu_matching/emu"
 # histogram file
 histo_fname = f"{histo_dir}/brick21_cell_{args.cellx}.{args.celly}_binning{args.binwidth}um.root"
 try:
@@ -465,7 +466,7 @@ if is_mc:
         tree_sel.Write()
 
         # we have to run n_clusters times over a reduced ttree, hopefully will be faster
-        print(f"TTree copied. Running over reduced tree, entrie:s {tree_sel.GetEntries()} / {fedra_ttree.GetEntries()}")
+        print(f"TTree copied. Running over reduced tree, entries: {tree_sel.GetEntries()} / {fedra_ttree.GetEntries()}")
 
 # output ttree
 out_tfile = ROOT.TFile(f"{output_dir}/cluster_{args.cellx}_{args.celly}_bin{args.binwidth}_minclus{args.min_clusters}_thres{args.threshold}_maxgap{args.maxgap}.root","recreate")
@@ -593,7 +594,7 @@ out_ttree.Write()
 ROOT.gStyle.SetOptStat(0)
 c = ROOT.TCanvas()
 c.SetCanvasSize(1000,1000)
-out_pdf = f"{work_dir}/img/clusters_{args.cellx}_{args.celly}_bin{args.binwidth}_minclus{args.min_clusters}_thres{args.threshold}_maxgap{args.maxgap}.pdf"
+out_pdf = f"{work_dir}/emu/img/clusters_{args.cellx}_{args.celly}_bin{args.binwidth}_minclus{args.min_clusters}_thres{args.threshold}_maxgap{args.maxgap}.pdf"
 c.Print(f"{out_pdf}[")
 
 # 3d

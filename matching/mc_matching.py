@@ -198,18 +198,27 @@ def fill_emu(event):
         clus_z.push_back(event.clus_z)
         clus_ntracks.push_back(event.clus_ntracks)
 
+
+""" Event loop
+
+We loop through scifi and emulsion using ievent and jevent
+respectively
+"""
 jevent = 0
 jentries = ttree_emu.GetEntries()
 print("will loop through scifi tree")
 for ievent, event in enumerate(ttree_sfi):
     if jevent >= jentries:
+        # exhausted emulsion tree
         break
     mcevt_sfi = event.eMCEvt
     ttree_emu.GetEntry(jevent)
     #print(ievent,jevent)
     mcevt_emu = ttree_emu.shw_eMCEvt[0]
 
-    # j > i: write i-0, advance i
+    # j > i:
+    # scifi tree is ahead of emulsion tree
+    # write i-0, advance i (i advances with main loop)
     if mcevt_emu > mcevt_sfi:
         clear_sfi()
         clear_emu()
@@ -217,7 +226,9 @@ for ievent, event in enumerate(ttree_sfi):
         ttree_sync.Fill()
         continue
 
-    # j < i: write 0-j, advance j
+    # j < i:
+    # emulsion has event not in scifi
+    # write 0-j, advance j
     if mcevt_emu < mcevt_sfi:
         clear_sfi()
         clear_emu()
@@ -227,7 +238,9 @@ for ievent, event in enumerate(ttree_sfi):
         ttree_sync.Fill()
         continue
     
-    # j = i: write i-j, advance j
+    # j = i:
+    # mc match
+    # write i-j, advance j
     filled_sfi = False
     while mcevt_emu == mcevt_sfi:
         if not filled_sfi:
