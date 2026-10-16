@@ -4,6 +4,8 @@ import fedrarootlogon
 import rootUtils as ut
 from array import array
 
+from macro.cell_geometry import *
+
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("--brick", dest="brick", type=int, default=21)
@@ -13,30 +15,15 @@ parser.add_argument("--celly", dest="celly", type=int, default=15)
 parser.add_argument("--minclusters", dest="min_clusters", type=int, default=1)
 parser.add_argument("--sample", dest="sample", default="FLUKA") # FLUKA, V2, data
 parser.add_argument("--threshold", dest="threshold", type=int, default=4) # number of new tracks per bin for clustering
-parser.add_argument("--maxgap", dest="maxgap", type=int, default=1) # max gap for clustering in xy and z
+parser.add_argument("--maxgap",    dest="maxgap",    type=int, default=1) # max gap for clustering in xy and z
 args = parser.parse_args()
 
 nbins_cell = int(10000/args.binwidth)
-def get_cell_borders(x,y,brick,mc=True):
-    width=10000
-    extra=0
-    off_x, off_y = 0, -500
-    if brick%10 == 3 or brick%10 == 1:
-        off_x = 195000
-    if brick%10 == 3 or brick%10 == 4:
-        off_y = 195000
-    if not mc:
-        off_x = 0
-        off_y = 0
-    xi = off_x + x*width - width/2 - extra
-    xf = off_x + x*width + width/2 + extra
-    yi = off_y + y*width - width/2 - extra
-    yf = off_y + y*width + width/2 + extra
-    return xi, xf, yi, yf
-is_mc = True
+is_data = False
 if args.sample == "data":
-    is_mc = False
-xi_cell, xf_cell, yi_cell, yf_cell = get_cell_borders(args.cellx, args.celly, args.brick, is_mc)
+    is_data = True
+is_mc = not is_data
+xi_cell, xf_cell, yi_cell, yf_cell = get_cell_borders(args.cellx, args.celly, args.brick, is_data)
 
 # work dir
 eos_dir = f"/eos/experiment/sndlhc/users/luarella"
@@ -295,7 +282,7 @@ class cluster_shower():
         x_index = cluster[0]
         y_index = cluster[1]
         z_index = cluster[2]
-        xi, xf, yi, yf = get_cell_borders(self.cell[0], self.cell[1], self.brick)
+        xi, xf, yi, yf = get_cell_borders(self.cell[0], self.cell[1], self.brick, is_data)
         ndiv = int(10000/self.binning)
         stepx = (xf-xi)/ndiv
         stepy = (yf-yi)/ndiv

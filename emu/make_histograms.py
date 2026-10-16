@@ -4,6 +4,7 @@ import fedrarootlogon
 import rootUtils as ut
 import array
 
+from macro.cell_geometry import *
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -32,23 +33,6 @@ if args.data:
 print("BASE DIR:",base_dir)
 work_dir = f"/afs/cern.ch/user/l/luarella/work-luarella/public/sf_emu_matching/emu"
 
-def get_cell_borders(x,y,brick, data):
-    width=10000
-    extra=0
-    off_x, off_y = 0, -500
-    if brick%10 == 3 or brick%10 == 1:
-        off_x = 195000
-    if brick%10 == 3 or brick%10 == 4:
-        off_y = 195000
-    if data:
-        off_x = 0
-        off_y = 0
-        
-    xi = off_x + x*width - width/2 - extra
-    xf = off_x + x*width + width/2 + extra
-    yi = off_y + y*width - width/2 - extra
-    yf = off_y + y*width + width/2 + extra
-    return xi, xf, yi, yf
 
 xi, null1, yi, null2 = get_cell_borders(1,1,brick, args.data)
 print(xi,null1,yi,null2)
