@@ -4,6 +4,8 @@ import fedrarootlogon
 import rootUtils as ut
 from array import array
 
+from macro.cell_geometry import *
+
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("--input", dest="input", required=True)
@@ -12,6 +14,7 @@ parser.add_argument("--minplate", dest="minplate", type=int, default=1)  # start
 parser.add_argument("--maxplate", dest="maxplate", type=int, default=40) # start plate
 parser.add_argument("--endplate", dest="endplate", type=int, default=54) # end plate
 parser.add_argument("--inputscifi", dest="inputscifi", default="")
+parser.add_argument("--data", action='store_true')
 args = parser.parse_args()
 
 tfile_emu = ROOT.TFile(args.input)
@@ -28,15 +31,7 @@ for x in range(1,19):
         tgr.SetName(f"tgr_{x}_{y}")
         d_tgraphs[f"tgr_{x}_{y}"] = tgr
 
-data = False
-x_t = -45.9
-y_t =  15.2
-if data:
-    x_t += 19.5
-    y_t += 00.0
-
-def emu_to_sf(emux, emuy):
-    return (emux/10000.)+x_t, (emuy/10000.)+y_t
+is_data = args.data
 
 nselected = 0
 print("will loop through events")
@@ -57,10 +52,8 @@ for ievent, event in enumerate(ttree_emu):
         continue
 
     nselected += 1
-    endx, endy = emu_to_sf(event.shw_x_end, event.shw_y_end)
-    #d_tgraphs[f"tgr_{event.shw_cell_x}_{event.shw_cell_y}"].AddPoint(event.shw_x_end, event.shw_y_end)
+    endx, endy = emu_to_sf(event.shw_x_end, event.shw_y_end, args.brick)
     d_tgraphs[f"tgr_{event.shw_cell_x}_{event.shw_cell_y}"].AddPoint(endx, endy)
-    #tgr_full.AddPoint(event.shw_x_end, event.shw_y_end)
     tgr_full.AddPoint(endx, endy)
 print("Finished loop through showers")
 print(f"Selected {nselected} showers")

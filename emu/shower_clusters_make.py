@@ -3,18 +3,20 @@ ROOT.gROOT.SetBatch(True)
 import fedrarootlogon
 import rootUtils as ut
 from array import array
+from pathlib import Path
 
 from macro.cell_geometry import *
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
 parser.add_argument("--brick", dest="brick", type=int, default=21)
+parser.add_argument("--run", dest="run", type=int, default=1)
 parser.add_argument("--binwidth",dest="binwidth",type=int, default=100)
 parser.add_argument("--cellx", dest="cellx", type=int, default=9)
 parser.add_argument("--celly", dest="celly", type=int, default=15)
 parser.add_argument("--minclusters", dest="min_clusters", type=int, default=1)
 parser.add_argument("--sample", dest="sample", default="FLUKA") # FLUKA, V2, data
-parser.add_argument("--threshold", dest="threshold", type=int, default=4) # number of new tracks per bin for clustering
+parser.add_argument("--threshold", dest="threshold", type=int, default=5) # number of new tracks per bin for clustering
 parser.add_argument("--maxgap",    dest="maxgap",    type=int, default=1) # max gap for clustering in xy and z
 args = parser.parse_args()
 
@@ -31,24 +33,27 @@ work_dir = f"/afs/cern.ch/user/l/luarella/work-luarella/public/sf_emu_matching"
 
 # fedra file
 if args.sample == "V2":
-    fedra_dir   = f"/eos/experiment/sndlhc/users/dancc/FEDRA/muon_Euniform_RUN1_V2/cell_reco"
+    fedra_dir   = f"/eos/experiment/sndlhc/users/dancc/FEDRA/muon_Euniform_RUN{args.run}_V2/cell_reco"
     histo_dir = f"{eos_dir}/emu/LHC_-160urad_magfield_2022TCL6_muons_rock_2e8pr_spectregen_18cmB21_transpVeto_SWANBINNING_V2"
     output_dir = f"{work_dir}/emu/root/clusters_V2"
 elif args.sample == "FLUKA":
-    fedra_dir   = f"/eos/experiment/sndlhc/users/dancc/FEDRA/muon_Euniform_RUN1_FLUKA25/b0000{args.brick}/cell_reco_retrk"
+    fedra_dir   = f"/eos/experiment/sndlhc/users/dancc/FEDRA/muon_Euniform_RUN{args.run}_FLUKA25/b0000{args.brick}/cell_reco_retrk"
     histo_dir = f"{eos_dir}/emu/ALL_lhc_ir1_coll_2023_exp001_fort_spectregen_SWANBINNING"
     output_dir = f"{work_dir}/emu/root/fluka"
 elif args.sample == "data":
-    fedra_dir = f"/eos/experiment/sndlhc/emulsionData/emureco_Napoli/RUN1/b000121/cells"
-    histo_dir = f"{eos_dir}/emu/data"
-    output_dir = f"{work_dir}/emu/root/clusters_data"
+    fedra_dir = f"/eos/experiment/sndlhc/emulsionData/emureco_Napoli/RUN{args.run}/b{args.run:04d}{args.brick}/cells"
+    histo_dir = f"{eos_dir}/emu/data/b{args.run:04d}{args.brick}"
+    output_dir = f"{work_dir}/emu/root/clusters_data/b{args.run:04d}{args.brick}"
+
+output_dir_path = Path(output_dir)
+output_dir_path.mkdir(parents=True, exist_ok=True)
 
 fedra_fname = f"{fedra_dir}/cell_{args.cellx}0_{args.celly}0/b0000{args.brick}/b0000{args.brick}.0.{args.cellx}.{args.celly}.trk.root"
 if args.sample == "data":
-    fedra_fname = f"{fedra_dir}/cell_{args.cellx}0_{args.celly}0/b0000{args.brick}/b0000{args.brick}.0.0.0.trk.root"
+    fedra_fname = f"{fedra_dir}/cell_{args.cellx}0_{args.celly}0/b{args.run:04d}{args.brick}/b{args.run:04d}{args.brick}.0.0.0.trk.root"
 
 # histogram file
-histo_fname = f"{histo_dir}/brick21_cell_{args.cellx}.{args.celly}_binning{args.binwidth}um.root"
+histo_fname = f"{histo_dir}/brick{args.brick}_cell_{args.cellx}.{args.celly}_binning{args.binwidth}um.root"
 try:
     histo_tfile = ROOT.TFile(f"{histo_fname}")
     print("Histo file opened OK: ", histo_tfile)
@@ -220,6 +225,7 @@ print("Clusterized  XYZ")
 class cluster_shower():
     is_mc = False
     cell = (0,0)
+    run   = 1
     brick = 21
     binning = 0
     # list of 3d-bins
@@ -238,7 +244,7 @@ class cluster_shower():
     p_ini = 0
     p_end = 0
 
-    def __init__(self,clusters,x=0,y=0,binning=100):
+    def __init__(self,clusters,x=0,y=0,binning=100, run=1, brick=21):
         # clusters are one 3d bin. list of tuples with 4 elemtents
         # (bin x, bin y, bin z, content)
         # binx and biny depend on binning argument in constructor
@@ -248,9 +254,11 @@ class cluster_shower():
         self.set_total_sf0()
         self.set_start_end_z()
 
+        self.run = run
+        self.brick = brick
         self.cell = (x,y)
         self.binning = binning
-       
+
     def set_start_end_z(self):
         z_sorted = sorted(self.l_clusters,key=lambda v: v[2])
         self.p_ini = z_sorted[0][2]
@@ -259,7 +267,11 @@ class cluster_shower():
     def set_total_sf0(self):
         for v in self.l_clusters:
             self.sum_sf0 += v[3]
-        
+
+    def get_run(self):
+        return self.run
+    def get_brick(self):
+        return self.brick
     def get_start_plate(self):
         return self.p_ini
     def get_end_plate(self):
@@ -406,7 +418,7 @@ for i,c in enumerate(cell_xyz_clusters):
     this loop does NOT make the clusters, it only makes a "boxy
     selection"
     """
-    myshower = cluster_shower(c,args.cellx, args.celly, args.binwidth)
+    myshower = cluster_shower(c,args.cellx, args.celly, args.binwidth, run=args.run, brick=args.brick)
     if myshower.get_nclusters() >= args.min_clusters:
         c0 = myshower.get_cluster(0)
         x,y,z = myshower.get_emu_coord(c0)
@@ -470,6 +482,7 @@ emu_z_max   = array('i',[0])
 emu_cell_x  = array('i',[0])
 emu_cell_y  = array('i',[0])
 emu_binning = array('i',[0])
+emu_run   = array('i',[0])
 emu_brick   = array('i',[0])
 emu_nclusters = array('i',[0])
 emu_ntracks = array('f',[0])
@@ -480,6 +493,8 @@ emu_purity  = array('f',[0])
 emu_cell_x[0]  = args.cellx
 emu_cell_y[0]  = args.celly
 emu_binning[0] = args.binwidth
+emu_run[0]     = args.run
+emu_brick[0]   = args.brick
 
 clus_x = ROOT.std.vector('float')()
 clus_y = ROOT.std.vector('float')()
@@ -498,6 +513,7 @@ out_ttree.Branch("shw_z_max", emu_z_max, "emu_z_max/I")
 out_ttree.Branch("shw_cell_x", emu_cell_x, "emu_cell_x/I")
 out_ttree.Branch("shw_cell_y", emu_cell_y, "emu_cell_y/I")
 out_ttree.Branch("shw_binning", emu_binning, "emu_binning/I")
+out_ttree.Branch("shw_run", emu_run, "emu_run/I")
 out_ttree.Branch("shw_brick", emu_brick, "emu_brick/I")
 out_ttree.Branch("shw_eMCEvt",emu_emcevt)
 out_ttree.Branch("shw_eMCEvt_ntracks",emu_emcevt_ntracks)
@@ -526,7 +542,7 @@ for i,c in enumerate(cell_xyz_clusters):
     clus_z.clear()
     clus_ntracks.clear()
     
-    myshower = cluster_shower(c,args.cellx, args.celly, args.binwidth)
+    myshower = cluster_shower(c,args.cellx, args.celly, args.binwidth, run=args.run, brick=args.brick)
     if myshower.get_nclusters() >= args.min_clusters:
         emu_nclusters[0] = myshower.get_nclusters()
         emu_ntracks[0] = myshower.get_content()
@@ -581,7 +597,7 @@ out_ttree.Write()
 ROOT.gStyle.SetOptStat(0)
 c = ROOT.TCanvas()
 c.SetCanvasSize(1000,1000)
-out_pdf = f"{work_dir}/emu/img/clusters_{args.cellx}_{args.celly}_bin{args.binwidth}_minclus{args.min_clusters}_thres{args.threshold}_maxgap{args.maxgap}.pdf"
+out_pdf = f"{work_dir}/emu/img/clusters_b{args.run:04d}{args.brick}_{args.cellx}_{args.celly}_bin{args.binwidth}_minclus{args.min_clusters}_thres{args.threshold}_maxgap{args.maxgap}.pdf"
 c.Print(f"{out_pdf}[")
 
 # 3d
