@@ -4,7 +4,7 @@ import fedrarootlogon
 import rootUtils as ut
 from array import array
 
-from macro.cell_geometry import *
+from utils.cell_geometry import *
 
 from argparse import ArgumentParser
 parser = ArgumentParser()

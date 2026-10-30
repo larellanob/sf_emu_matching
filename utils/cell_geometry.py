@@ -1,13 +1,12 @@
 import ROOT
 
-def emu_to_sf(emux, emuy, brick):
-    # translations (in cm
-    x_t = -45.9
-    y_t =  15.2
+def emu_to_sf(emux, emuy, brick, x_t=-45.9, y_t=15.2):
+    # translations (in cm)
     if brick%10 == 1 or brick%10 == 3:
         x_t += 19.5
     if brick%10 == 3 or brick%10 == 4:
         y_t += 19.5
+    # returns in scifi (detector) coordinates (cm)
     return (emux/10000.)+x_t, (emuy/10000.)+y_t
 
 def get_cell_borders(cellx,celly,brick):
